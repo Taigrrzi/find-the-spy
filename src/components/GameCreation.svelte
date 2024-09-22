@@ -1,10 +1,10 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
-  import { fade, slide } from 'svelte/transition';
+  import { createEventDispatcher } from "svelte";
+  import { fade, slide } from "svelte/transition";
 
   const dispatch = createEventDispatcher();
 
-  let players = ['Player 1', 'Player 2'];
+  let players = ["Player 1", "Player 2"];
 
   function addPlayer() {
     players = [...players, `Player ${players.length + 1}`];
@@ -15,7 +15,7 @@
   }
 
   function startGame() {
-    dispatch('gameStart', { players });
+    dispatch("gameStart", { players });
   }
 </script>
 

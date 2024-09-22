@@ -1,13 +1,13 @@
 <script>
-  import { onMount } from 'svelte';
-  import { fade } from 'svelte/transition';
-  import topics from '../data/topics.js';
+  import { onMount } from "svelte";
+  import { fade } from "svelte/transition";
+  import topics from "../data/topics.js";
 
   export let gameState;
 
-  let currentTopic = '';
-  let currentItem = '';
-  let currentSpy = '';
+  let currentTopic = "";
+  let currentItem = "";
+  let currentSpy = "";
   let isRevealed = false;
   let roundStarted = false;
 
@@ -19,13 +19,17 @@
     gameState.currentRound++;
     isRevealed = false;
     roundStarted = false;
-    
+
     const topicIndex = Math.floor(gameState.rng() * topics.length);
     currentTopic = topics[topicIndex].name;
-    const itemIndex = Math.floor(gameState.rng() * topics[topicIndex].items.length);
+    const itemIndex = Math.floor(
+      gameState.rng() * topics[topicIndex].items.length,
+    );
     currentItem = topics[topicIndex].items[itemIndex];
-    
-    const spyIndex = Math.floor(gameState.rng() * gameState.config.players.length);
+
+    const spyIndex = Math.floor(
+      gameState.rng() * gameState.config.players.length,
+    );
     currentSpy = gameState.config.players[spyIndex];
   }
 
@@ -40,7 +44,7 @@
 
 <div class="game-running">
   <h2>Round {gameState.currentRound}</h2>
-  
+
   {#if !roundStarted}
     <p>Topic: {currentTopic}</p>
     <button on:click={startRound}>Start Round</button>
