@@ -8,7 +8,7 @@
   let gameConfiguration = null;
   let gameState = null;
   let gameLink = "";
-  let qrCodeGenerated = false;
+  let qrCodeContainer = null;
 
   onMount(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -44,27 +44,14 @@
       timestamp: timestamp,
     };
 
-    const rng = seedrandom(timestamp.toString());
-    gameState = {
-      currentPlayer: null,
-      config: gameConfiguration,
-      currentRound: 0,
-      rng: rng,
-    };
-
     const encodedConfig = btoa(JSON.stringify(gameConfiguration));
     gameLink = `${window.location.origin}${window.location.pathname}?config=${encodedConfig}`;
 
-    QRCode.toCanvas(
-      document.getElementById("qrcode"),
-      gameLink,
-      { width: 300 },
-      (error) => {
-        if (error) console.error(error);
-        console.log("QR code generated");
-        qrCodeGenerated = true;
-      },
-    );
+    QRCode.toCanvas(gameLink, { width: 300 }, (error, canvas) => {
+      if (error) console.error(error);
+      console.log("QR code generated");
+      qrCodeContainer.appendChild(canvas);
+    });
   }
 
   function handlePlayerSelection(player) {
@@ -73,24 +60,26 @@
 </script>
 
 <main>
-  {#if !gameConfiguration}
-    <GameCreation on:gameStart={handleGameStart} />
-    {#if qrCodeGenerated}
-      <canvas id="qrcode"></canvas>
+  {#if gameState}
+    {#if !gameState.currentPlayer}
+      <h2>Select your player:</h2>
+      {#each gameConfiguration.players as player}
+        <button on:click={() => handlePlayerSelection(player)}>{player}</button>
+      {/each}
+    {:else}
+      <GameRunning {gameState} />
+    {/if}
+  {:else}
+    <div bind:this={qrCodeContainer}></div>
+    {#if gameConfiguration}
       <div class="game-link">
         <p>Or share this link:</p>
-        <a href={gameLink} target="_blank" rel="noopener noreferrer"
-          >{gameLink}</a
+        <a href={gameLink} target="_blank" rel="noopener noreferrer">{gameLink}</a
         >
       </div>
+    {:else}
+      <GameCreation on:gameStart={handleGameStart} />
     {/if}
-  {:else if !gameState.currentPlayer}
-    <h2>Select your player:</h2>
-    {#each gameConfiguration.players as player}
-      <button on:click={() => handlePlayerSelection(player)}>{player}</button>
-    {/each}
-  {:else}
-    <GameRunning {gameState} />
   {/if}
 </main>
 

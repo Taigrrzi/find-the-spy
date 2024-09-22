@@ -28,7 +28,7 @@
     </div>
   {/each}
   <button on:click={addPlayer} transition:fade>Add Player</button>
-  <button on:click={startGame}>Start Game</button>
+  <button on:click={startGame}>Create Game</button>
 </div>
 
 <style>
