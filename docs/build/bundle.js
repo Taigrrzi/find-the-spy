@@ -911,11 +911,11 @@ var app = (function () {
     			button = element("button");
     			button.textContent = "Remove";
     			attr_dev(input, "placeholder", "Player name");
-    			add_location(input, file$2, 25, 6, 604);
+    			add_location(input, file$2, 25, 6, 616);
     			attr_dev(button, "class", "svelte-49dl4l");
-    			add_location(button, file$2, 26, 6, 670);
+    			add_location(button, file$2, 26, 6, 682);
     			attr_dev(div, "class", "player-input svelte-49dl4l");
-    			add_location(div, file$2, 24, 4, 554);
+    			add_location(div, file$2, 24, 4, 566);
     			this.first = div;
     		},
     		m: function mount(target, anchor) {
@@ -977,6 +977,66 @@ var app = (function () {
     	return block;
     }
 
+    // (31:2) {#if players.length >= 3}
+    function create_if_block$2(ctx) {
+    	let button;
+    	let button_transition;
+    	let current;
+    	let mounted;
+    	let dispose;
+
+    	const block = {
+    		c: function create() {
+    			button = element("button");
+    			button.textContent = "Create Game";
+    			attr_dev(button, "class", "svelte-49dl4l");
+    			add_location(button, file$2, 31, 4, 859);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, button, anchor);
+    			current = true;
+
+    			if (!mounted) {
+    				dispose = listen_dev(button, "click", /*startGame*/ ctx[3], false, false, false, false);
+    				mounted = true;
+    			}
+    		},
+    		p: noop,
+    		i: function intro(local) {
+    			if (current) return;
+
+    			add_render_callback(() => {
+    				if (!current) return;
+    				if (!button_transition) button_transition = create_bidirectional_transition(button, slide, {}, true);
+    				button_transition.run(1);
+    			});
+
+    			current = true;
+    		},
+    		o: function outro(local) {
+    			if (!button_transition) button_transition = create_bidirectional_transition(button, slide, {}, false);
+    			button_transition.run(0);
+    			current = false;
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(button);
+    			if (detaching && button_transition) button_transition.end();
+    			mounted = false;
+    			dispose();
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block$2.name,
+    		type: "if",
+    		source: "(31:2) {#if players.length >= 3}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
     function create_fragment$2(ctx) {
     	let div;
     	let h2;
@@ -984,10 +1044,9 @@ var app = (function () {
     	let each_blocks = [];
     	let each_1_lookup = new Map();
     	let t2;
-    	let button0;
-    	let button0_transition;
+    	let button;
+    	let button_transition;
     	let t4;
-    	let button1;
     	let current;
     	let mounted;
     	let dispose;
@@ -1002,6 +1061,8 @@ var app = (function () {
     		each_1_lookup.set(key, each_blocks[i] = create_each_block$1(key, child_ctx));
     	}
 
+    	let if_block = /*players*/ ctx[0].length >= 3 && create_if_block$2(ctx);
+
     	const block = {
     		c: function create() {
     			div = element("div");
@@ -1014,18 +1075,15 @@ var app = (function () {
     			}
 
     			t2 = space();
-    			button0 = element("button");
-    			button0.textContent = "Add Player";
+    			button = element("button");
+    			button.textContent = "Add Player";
     			t4 = space();
-    			button1 = element("button");
-    			button1.textContent = "Create Game";
-    			add_location(h2, file$2, 22, 2, 490);
-    			attr_dev(button0, "class", "svelte-49dl4l");
-    			add_location(button0, file$2, 29, 2, 750);
-    			attr_dev(button1, "class", "svelte-49dl4l");
-    			add_location(button1, file$2, 30, 2, 817);
+    			if (if_block) if_block.c();
+    			add_location(h2, file$2, 22, 2, 502);
+    			attr_dev(button, "class", "svelte-49dl4l");
+    			add_location(button, file$2, 29, 2, 762);
     			attr_dev(div, "class", "game-creation svelte-49dl4l");
-    			add_location(div, file$2, 21, 0, 460);
+    			add_location(div, file$2, 21, 0, 472);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -1042,17 +1100,13 @@ var app = (function () {
     			}
 
     			append_dev(div, t2);
-    			append_dev(div, button0);
+    			append_dev(div, button);
     			append_dev(div, t4);
-    			append_dev(div, button1);
+    			if (if_block) if_block.m(div, null);
     			current = true;
 
     			if (!mounted) {
-    				dispose = [
-    					listen_dev(button0, "click", /*addPlayer*/ ctx[1], false, false, false, false),
-    					listen_dev(button1, "click", /*startGame*/ ctx[3], false, false, false, false)
-    				];
-
+    				dispose = listen_dev(button, "click", /*addPlayer*/ ctx[1], false, false, false, false);
     				mounted = true;
     			}
     		},
@@ -1065,6 +1119,29 @@ var app = (function () {
     				each_blocks = update_keyed_each(each_blocks, dirty, get_key, 1, ctx, each_value, each_1_lookup, div, outro_and_destroy_block, create_each_block$1, t2, get_each_context$1);
     				check_outros();
     			}
+
+    			if (/*players*/ ctx[0].length >= 3) {
+    				if (if_block) {
+    					if_block.p(ctx, dirty);
+
+    					if (dirty & /*players*/ 1) {
+    						transition_in(if_block, 1);
+    					}
+    				} else {
+    					if_block = create_if_block$2(ctx);
+    					if_block.c();
+    					transition_in(if_block, 1);
+    					if_block.m(div, null);
+    				}
+    			} else if (if_block) {
+    				group_outros();
+
+    				transition_out(if_block, 1, 1, () => {
+    					if_block = null;
+    				});
+
+    				check_outros();
+    			}
     		},
     		i: function intro(local) {
     			if (current) return;
@@ -1075,10 +1152,11 @@ var app = (function () {
 
     			add_render_callback(() => {
     				if (!current) return;
-    				if (!button0_transition) button0_transition = create_bidirectional_transition(button0, fade, {}, true);
-    				button0_transition.run(1);
+    				if (!button_transition) button_transition = create_bidirectional_transition(button, fade, {}, true);
+    				button_transition.run(1);
     			});
 
+    			transition_in(if_block);
     			current = true;
     		},
     		o: function outro(local) {
@@ -1086,8 +1164,9 @@ var app = (function () {
     				transition_out(each_blocks[i]);
     			}
 
-    			if (!button0_transition) button0_transition = create_bidirectional_transition(button0, fade, {}, false);
-    			button0_transition.run(0);
+    			if (!button_transition) button_transition = create_bidirectional_transition(button, fade, {}, false);
+    			button_transition.run(0);
+    			transition_out(if_block);
     			current = false;
     		},
     		d: function destroy(detaching) {
@@ -1097,9 +1176,10 @@ var app = (function () {
     				each_blocks[i].d();
     			}
 
-    			if (detaching && button0_transition) button0_transition.end();
+    			if (detaching && button_transition) button_transition.end();
+    			if (if_block) if_block.d();
     			mounted = false;
-    			run_all(dispose);
+    			dispose();
     		}
     	};
 
@@ -1118,7 +1198,7 @@ var app = (function () {
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('GameCreation', slots, []);
     	const dispatch = createEventDispatcher();
-    	let players = ["Player 1", "Player 2"];
+    	let players = ["Player 1", "Player 2", "Player 3"];
 
     	function addPlayer() {
     		$$invalidate(0, players = [...players, `Player ${players.length + 1}`]);
@@ -1212,31 +1292,31 @@ var app = (function () {
 
     // (59:2) {:else}
     function create_else_block_1$1(ctx) {
-    	let p;
     	let t0;
-    	let t1;
-    	let t2;
     	let button;
     	let mounted;
     	let dispose;
 
+    	function select_block_type_2(ctx, dirty) {
+    		if (/*gameState*/ ctx[0].currentPlayer !== /*currentSpy*/ ctx[3]) return create_if_block_3;
+    		return create_else_block_2$1;
+    	}
+
+    	let current_block_type = select_block_type_2(ctx);
+    	let if_block = current_block_type(ctx);
+
     	const block = {
     		c: function create() {
-    			p = element("p");
-    			t0 = text("The spy was: ");
-    			t1 = text(/*currentSpy*/ ctx[3]);
-    			t2 = space();
+    			if_block.c();
+    			t0 = space();
     			button = element("button");
     			button.textContent = "Next Round";
-    			add_location(p, file$1, 59, 4, 1447);
     			attr_dev(button, "class", "svelte-nowyho");
-    			add_location(button, file$1, 60, 4, 1484);
+    			add_location(button, file$1, 64, 4, 1598);
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, p, anchor);
-    			append_dev(p, t0);
-    			append_dev(p, t1);
-    			insert_dev(target, t2, anchor);
+    			if_block.m(target, anchor);
+    			insert_dev(target, t0, anchor);
     			insert_dev(target, button, anchor);
 
     			if (!mounted) {
@@ -1245,13 +1325,23 @@ var app = (function () {
     			}
     		},
     		p: function update(ctx, dirty) {
-    			if (dirty & /*currentSpy*/ 8) set_data_dev(t1, /*currentSpy*/ ctx[3]);
+    			if (current_block_type === (current_block_type = select_block_type_2(ctx)) && if_block) {
+    				if_block.p(ctx, dirty);
+    			} else {
+    				if_block.d(1);
+    				if_block = current_block_type(ctx);
+
+    				if (if_block) {
+    					if_block.c();
+    					if_block.m(t0.parentNode, t0);
+    				}
+    			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(p);
-    			if (detaching) detach_dev(t2);
+    			if_block.d(detaching);
+    			if (detaching) detach_dev(t0);
     			if (detaching) detach_dev(button);
     			mounted = false;
     			dispose();
@@ -1434,6 +1524,80 @@ var app = (function () {
     		id: create_if_block$1.name,
     		type: "if",
     		source: "(48:2) {#if !roundStarted}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (62:4) {:else}
+    function create_else_block_2$1(ctx) {
+    	let p;
+    	let t0;
+    	let t1;
+
+    	const block = {
+    		c: function create() {
+    			p = element("p");
+    			t0 = text("The item was: ");
+    			t1 = text(/*currentItem*/ ctx[2]);
+    			add_location(p, file$1, 62, 6, 1549);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, p, anchor);
+    			append_dev(p, t0);
+    			append_dev(p, t1);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*currentItem*/ 4) set_data_dev(t1, /*currentItem*/ ctx[2]);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(p);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_else_block_2$1.name,
+    		type: "else",
+    		source: "(62:4) {:else}",
+    		ctx
+    	});
+
+    	return block;
+    }
+
+    // (60:4) {#if gameState.currentPlayer !== currentSpy}
+    function create_if_block_3(ctx) {
+    	let p;
+    	let t0;
+    	let t1;
+
+    	const block = {
+    		c: function create() {
+    			p = element("p");
+    			t0 = text("The spy was: ");
+    			t1 = text(/*currentSpy*/ ctx[3]);
+    			add_location(p, file$1, 60, 6, 1498);
+    		},
+    		m: function mount(target, anchor) {
+    			insert_dev(target, p, anchor);
+    			append_dev(p, t0);
+    			append_dev(p, t1);
+    		},
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*currentSpy*/ 8) set_data_dev(t1, /*currentSpy*/ ctx[3]);
+    		},
+    		d: function destroy(detaching) {
+    			if (detaching) detach_dev(p);
+    		}
+    	};
+
+    	dispatch_dev("SvelteRegisterBlock", {
+    		block,
+    		id: create_if_block_3.name,
+    		type: "if",
+    		source: "(60:4) {#if gameState.currentPlayer !== currentSpy}",
     		ctx
     	});
 

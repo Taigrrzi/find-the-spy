@@ -4,7 +4,7 @@
 
   const dispatch = createEventDispatcher();
 
-  let players = ["Player 1", "Player 2"];
+  let players = ["Player 1", "Player 2", "Player 3"];
 
   function addPlayer() {
     players = [...players, `Player ${players.length + 1}`];
@@ -28,7 +28,9 @@
     </div>
   {/each}
   <button on:click={addPlayer} transition:fade>Add Player</button>
-  <button on:click={startGame}>Create Game</button>
+  {#if players.length >= 3}
+    <button on:click={startGame} transition:slide>Create Game</button>
+  {/if}
 </div>
 
 <style>

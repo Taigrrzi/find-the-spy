@@ -57,7 +57,11 @@
     {/if}
     <button on:click={revealSpy}>Reveal</button>
   {:else}
-    <p>The spy was: {currentSpy}</p>
+    {#if gameState.currentPlayer !== currentSpy}
+      <p>The spy was: {currentSpy}</p>
+    {:else}
+      <p>The item was: {currentItem}</p>
+    {/if}
     <button on:click={startNewRound}>Next Round</button>
   {/if}
 </div>
