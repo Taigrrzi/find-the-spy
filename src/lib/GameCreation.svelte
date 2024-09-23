@@ -3,6 +3,7 @@
   import { fly } from 'svelte/transition';
   import QRCode from 'qrcode';
   import { browser } from '$app/environment';
+  import { base } from '$app/paths';
 
   let players = [''];
   let qrCodeDataUrl = '';
@@ -107,7 +108,7 @@
   <div class="container">
     <!-- Logo -->
     <div class="logo-container">
-      <img src="/logo.jpg" alt="Game Logo" />
+      <img src="{base}/logo.jpg" alt="Game Logo" />
     </div>
 
     <!-- Category Selection Section -->
@@ -168,7 +169,12 @@
     role="dialog"
     aria-labelledby="modal-title"
   >
-    <div class="modal-content" on:click|stopPropagation>
+    <div
+      class="modal-content"
+      on:click|stopPropagation
+      on:keydown|stopPropagation
+      tabindex="0"
+    >
       <h3 id="modal-title">Attention</h3>
       <p>{modalMessage}</p>
       <button on:click={closeModal}>Close</button>

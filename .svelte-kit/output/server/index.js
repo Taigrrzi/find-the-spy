@@ -1,11 +1,11 @@
-import { D as DEV } from "./chunks/prod-ssr.js";
-import { b as base, a as assets, o as override, r as reset, p as public_env, s as safe_public_env, c as options, d as set_private_env, e as prerendering, f as set_public_env, g as get_hooks, h as set_safe_public_env } from "./chunks/internal.js";
-import { H as HttpError, S as SvelteKitError, t as text, j as json, R as Redirect, A as ActionFailure } from "./chunks/index.js";
+import { b as base, a as assets, o as override, r as reset } from "./chunks/paths.js";
 import { m as make_trackable, d as disable_search, n as normalize_path, a as add_data_suffix, r as resolve, b as decode_pathname, h as has_data_suffix, s as strip_data_suffix, c as decode_params, v as validate_layout_server_exports, e as validate_layout_exports, f as validate_page_server_exports, g as validate_page_exports, i as validate_server_exports } from "./chunks/exports.js";
 import * as devalue from "devalue";
-import { w as writable, r as readable } from "./chunks/index2.js";
+import { n as noop, f as safe_not_equal } from "./chunks/ssr.js";
+import { p as public_env, s as safe_public_env, o as options, a as set_private_env, b as prerendering, c as set_public_env, g as get_hooks, d as set_safe_public_env } from "./chunks/internal.js";
 import { parse, serialize } from "cookie";
 import * as set_cookie_parser from "set-cookie-parser";
+const DEV = false;
 const SVELTE_KIT_ASSETS = "/_svelte_kit_assets";
 const ENDPOINT_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"];
 const PAGE_METHODS = ["GET", "POST", "HEAD"];
@@ -55,6 +55,87 @@ function is_form_content_type(request) {
     "multipart/form-data",
     "text/plain"
   );
+}
+class HttpError {
+  /**
+   * @param {number} status
+   * @param {{message: string} extends App.Error ? (App.Error | string | undefined) : App.Error} body
+   */
+  constructor(status, body2) {
+    this.status = status;
+    if (typeof body2 === "string") {
+      this.body = { message: body2 };
+    } else if (body2) {
+      this.body = body2;
+    } else {
+      this.body = { message: `Error: ${status}` };
+    }
+  }
+  toString() {
+    return JSON.stringify(this.body);
+  }
+}
+class Redirect {
+  /**
+   * @param {300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308} status
+   * @param {string} location
+   */
+  constructor(status, location) {
+    this.status = status;
+    this.location = location;
+  }
+}
+class SvelteKitError extends Error {
+  /**
+   * @param {number} status
+   * @param {string} text
+   * @param {string} message
+   */
+  constructor(status, text2, message) {
+    super(message);
+    this.status = status;
+    this.text = text2;
+  }
+}
+class ActionFailure {
+  /**
+   * @param {number} status
+   * @param {T} data
+   */
+  constructor(status, data) {
+    this.status = status;
+    this.data = data;
+  }
+}
+function json(data, init2) {
+  const body2 = JSON.stringify(data);
+  const headers2 = new Headers(init2?.headers);
+  if (!headers2.has("content-length")) {
+    headers2.set("content-length", encoder$3.encode(body2).byteLength.toString());
+  }
+  if (!headers2.has("content-type")) {
+    headers2.set("content-type", "application/json");
+  }
+  return new Response(body2, {
+    ...init2,
+    headers: headers2
+  });
+}
+const encoder$3 = new TextEncoder();
+function text(body2, init2) {
+  const headers2 = new Headers(init2?.headers);
+  if (!headers2.has("content-length")) {
+    const encoded = encoder$3.encode(body2);
+    headers2.set("content-length", encoded.byteLength.toString());
+    return new Response(encoded, {
+      ...init2,
+      headers: headers2
+    });
+  }
+  return new Response(body2, {
+    ...init2,
+    headers: headers2
+  });
 }
 function coalesce_to_error(err) {
   return err instanceof Error || err && /** @type {any} */
@@ -673,6 +754,53 @@ async function stream_to_string(stream) {
     result += decoder.decode(value);
   }
   return result;
+}
+const subscriber_queue = [];
+function readable(value, start) {
+  return {
+    subscribe: writable(value, start).subscribe
+  };
+}
+function writable(value, start = noop) {
+  let stop;
+  const subscribers = /* @__PURE__ */ new Set();
+  function set(new_value) {
+    if (safe_not_equal(value, new_value)) {
+      value = new_value;
+      if (stop) {
+        const run_queue = !subscriber_queue.length;
+        for (const subscriber of subscribers) {
+          subscriber[1]();
+          subscriber_queue.push(subscriber, value);
+        }
+        if (run_queue) {
+          for (let i = 0; i < subscriber_queue.length; i += 2) {
+            subscriber_queue[i][0](subscriber_queue[i + 1]);
+          }
+          subscriber_queue.length = 0;
+        }
+      }
+    }
+  }
+  function update(fn) {
+    set(fn(value));
+  }
+  function subscribe(run, invalidate = noop) {
+    const subscriber = [run, invalidate];
+    subscribers.add(subscriber);
+    if (subscribers.size === 1) {
+      stop = start(set, update) || noop;
+    }
+    run(value);
+    return () => {
+      subscribers.delete(subscriber);
+      if (subscribers.size === 0 && stop) {
+        stop();
+        stop = null;
+      }
+    };
+  }
+  return { set, update, subscribe };
 }
 function hash(...values) {
   let hash2 = 5381;
@@ -2462,7 +2590,7 @@ async function respond(request, options2, manifest, state) {
     fetch: null,
     getClientAddress: state.getClientAddress || (() => {
       throw new Error(
-        `${"@sveltejs/adapter-auto"} does not specify getClientAddress. Please raise an issue`
+        `${"@sveltejs/adapter-static"} does not specify getClientAddress. Please raise an issue`
       );
     }),
     locals: {},
