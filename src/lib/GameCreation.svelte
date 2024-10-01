@@ -1,29 +1,28 @@
 <script>
   import { onMount } from 'svelte';
-  import { fly } from 'svelte/transition';
+  import { fly, slide, fade } from 'svelte/transition';
   import QRCode from 'qrcode';
   import { browser } from '$app/environment';
   import { base } from '$app/paths';
 
-  let players = [''];
+  let players = ['', '', ''];
   let qrCodeDataUrl = '';
   let gameStarted = false;
   let gameUrl = '';
   let showModal = false;
   let modalMessage = '';
+  let showRulesModal = false;
 
-  let topics = []; // To store the topics fetched from 'topics.json'
+  let topics = [];
 
   onMount(async () => {
     if (browser) {
       try {
-        const res = await fetch('/topics.json');
+        const res = await fetch(base + '/topics.json');
         if (!res.ok) {
           throw new Error(`Failed to load topics: ${res.status} ${res.statusText}`);
         }
         const data = await res.json();
-
-        // Initialize topics with 'selected' property
         topics = data.map((topic) => ({ ...topic, selected: true }));
       } catch (error) {
         console.error('Error loading topics:', error);
@@ -37,46 +36,40 @@
   }
 
   function removePlayer(index) {
-    players = players.filter((_, i) => i !== index);
+    if (index >= 3) {
+      players = players.filter((_, i) => i !== index);
+    }
   }
 
   function toggleCategory(index) {
-    topics = topics.map((topic, i) => 
+    topics = topics.map((topic, i) =>
       i === index ? { ...topic, selected: !topic.selected } : topic
     );
   }
 
-  function validateGameStart() {
-    const validPlayers = players.filter(p => p.trim() !== '');
-    const selectedCategories = topics.filter(t => t.selected);
+  $: validPlayers = players.filter((p) => p.trim() !== '');
+  $: selectedCategories = topics.filter((t) => t.selected);
+  $: canStartGame = validPlayers.length >= 3 && selectedCategories.length >= 1;
 
+  $: startGamePreventMessage = (() => {
     if (validPlayers.length < 3) {
-      showModal = true;
-      modalMessage = 'You need at least 3 players to start the game.';
-      return false;
+      return 'You need at least 3 players to start the game.';
+    } else if (selectedCategories.length === 0) {
+      return 'You need to select at least one category to start the game.';
     }
-
-    if (selectedCategories.length === 0) {
-      showModal = true;
-      modalMessage = 'You need to select at least one category to start the game.';
-      return false;
-    }
-
-    return true;
-  }
+    return '';
+  })();
 
   async function startGame() {
-    if (!validateGameStart()) return;
+    if (!canStartGame) return;
 
     const timestamp = Date.now();
-
-    // Get indices of selected categories
     const selectedCategoryIndices = topics
       .map((topic, index) => (topic.selected ? index : null))
       .filter((index) => index !== null);
 
     const gameConfiguration = {
-      players: players.filter((p) => p.trim() !== ''),
+      players: validPlayers,
       timestamp,
       selectedCategoryIndices,
     };
@@ -97,21 +90,30 @@
     showModal = false;
   }
 
+  function openRulesModal() {
+    showRulesModal = true;
+  }
+
+  function closeRulesModal() {
+    showRulesModal = false;
+  }
+
   function handleModalKeydown(event) {
     if (event.key === 'Escape') {
       closeModal();
+      closeRulesModal();
     }
   }
 </script>
 
+<div class="question-mark" on:click={openRulesModal}>?</div>
+
 {#if !gameStarted}
-  <div class="container">
-    <!-- Logo -->
+  <div class="container" transition:slide>
     <div class="logo-container">
       <img src="{base}/logo.jpg" alt="Game Logo" />
     </div>
 
-    <!-- Category Selection Section -->
     <div class="section category-section">
       <h2>Select Categories</h2>
       <div class="categories-grid">
@@ -127,8 +129,7 @@
         {/each}
       </div>
     </div>
-
-    <!-- Player List Section -->
+    
     <div class="section player-section">
       <h2>Add Players</h2>
       <ul class="player-list">
@@ -136,7 +137,7 @@
           <li transition:fly={{ y: 20, duration: 200 }}>
             <div class="player-input">
               <input type="text" bind:value={players[index]} placeholder="Player Name" />
-              {#if players.length > 1}
+              {#if index >= 3}
                 <button on:click={() => removePlayer(index)} class="remove-player-button">✕</button>
               {/if}
             </div>
@@ -146,23 +147,31 @@
       <button on:click={addPlayer}>Add Player</button>
     </div>
 
-    <!-- Start Game Button -->
-    <button on:click={startGame} class="start-game-button">Start Game</button>
+    <button
+      on:click={startGame}
+      class="start-game-button"
+      disabled={!canStartGame}
+    >
+      Start Game
+    </button>
+    {#if startGamePreventMessage}
+      <p class="prevent-message">{startGamePreventMessage}</p>
+    {/if}
   </div>
 {:else}
-  <div class="container post-game">
+  <div class="container post-game" transition:slide>
     <h2>Share the Game</h2>
     <div class="qr-code-container">
       <img src={qrCodeDataUrl} alt="Game QR Code" />
     </div>
     <p>Or share this link:</p>
-    <p class="game-link"><a href="{gameUrl}">{gameUrl}</a></p>
+    <p class="game-link"><a href="{gameUrl}" target="_blank" rel="noopener noreferrer">{gameUrl}</a></p>
   </div>
 {/if}
 
 {#if showModal}
-  <div 
-    class="modal-overlay" 
+  <div
+    class="modal-overlay"
     on:click={closeModal}
     on:keydown={handleModalKeydown}
     tabindex="0"
@@ -181,6 +190,56 @@
     </div>
   </div>
 {/if}
+
+{#if showRulesModal}
+  <div
+    class="modal-overlay"
+    on:click={closeRulesModal}
+    on:keydown={handleModalKeydown}
+    tabindex="0"
+    role="dialog"
+    aria-labelledby="rules-modal-title"
+    transition:fade={{ duration: 200 }}
+  >
+    <div
+      class="modal-content rules-modal"
+      on:click|stopPropagation
+      on:keydown|stopPropagation
+      tabindex="0"
+      transition:fly={{ y: 20, duration: 300 }}
+    >
+      <h3 id="rules-modal-title">🕵️‍♂️ How to Play Find The Spy!</h3>
+      <div class="rules-content">
+        <div class="rule-item">
+          <h4>1. Setup</h4>
+          <p>Host chooses categories and players, then shares the game link.</p>
+        </div>
+        <div class="rule-item">
+          <h4>2. Roles</h4>
+          <p>All players get a topic (e.g., "Animals"). Most players receive a specific word (e.g., "Lion"), while one player becomes the <strong>Spy</strong> without knowing the word.</p>
+        </div>
+        <div class="rule-item">
+          <h4>3. Discussion</h4>
+          <p>Players take turns saying one word related to the secret word. You have <strong>10 seconds</strong> to speak or think. Known players, be subtle! Spy, try to blend in!</p>
+        </div>
+        <div class="rule-item">
+          <h4>4. Voting</h4>
+          <p>After one round, players vote on who they think is the Spy. Majority wins!</p>
+        </div>
+        <div class="rule-item">
+          <h4>5. Reveal</h4>
+          <ul>
+            <li>Caught Spy: Gets one guess at the secret word. Correct guess means Spy wins!</li>
+            <li>Undiscovered Spy: Automatic win for the Spy!</li>
+          </ul>
+        </div>
+      </div>
+      <p class="rules-footer"><strong>Be clever, be sneaky, and may the best Spy win! 🕵️‍♀️🎉</strong></p>
+      <button on:click={closeRulesModal} class="close-button">Close</button>
+    </div>
+  </div>
+{/if}
+
 
 <style>
   .container {
@@ -239,10 +298,7 @@
     color: #ffffff;
   }
 
-  .category-item:hover {
-    background-color: var(--button-background);
-    color: #ffffff;
-  }
+  /* Removed hover effect on category items */
 
   .player-list {
     list-style: none;
@@ -253,6 +309,10 @@
     display: flex;
     gap: 0.5em;
     margin-bottom: 0.5em;
+  }
+
+  .player-input input {
+    font-size: 16px; /* Prevents mobile zoom on focus */
   }
 
   .remove-player-button {
@@ -272,6 +332,20 @@
     margin-top: 1em;
     font-size: 1.2em;
     padding: 0.8em 1.5em;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .start-game-button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .prevent-message {
+    color: #ff0000;
+    margin-top: 0.5em;
+    font-size: 0.9em;
   }
 
   .modal-overlay {
@@ -284,13 +358,18 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 1000;
   }
 
   .modal-content {
     background-color: var(--background-color);
-    padding: 2em;
+    padding: 1.5rem;
     border-radius: 8px;
-    text-align: center;
+    max-width: 90%;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   }
 
   .post-game {
@@ -316,5 +395,97 @@
     .categories-grid {
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
+  }
+
+  @media (min-width: 768px) {
+    .modal-content {
+      max-width: 600px;
+    }
+
+    .rules-modal h3 {
+      font-size: 1.6rem;
+    }
+
+    .rule-item h4 {
+      font-size: 1.2rem;
+    }
+
+    .rule-item p, .rule-item ul {
+      font-size: 1rem;
+    }
+  }
+
+  .question-mark {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+    background-color: var(--primary-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 18px;
+  }
+
+  .rules-modal {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .rules-modal h3 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .rules-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .rule-item {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 4px;
+  }
+
+  .rule-item h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+  }
+
+  .rule-item p, .rule-item ul {
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .rule-item ul {
+    padding-left: 1.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .rules-footer {
+    text-align: center;
+    margin-top: 1rem;
+    font-size: 1rem;
+  }
+
+  .close-button {
+    margin-top: 1rem;
+    align-self: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
   }
 </style>

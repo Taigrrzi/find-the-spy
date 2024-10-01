@@ -8,6 +8,7 @@
   --secondary-text-color: #B3B3B3;
   --border-color: #282828;
   --button-background: #1DB954;
+  --button-hover-background: #ebd764;
   --button-text-color: #FFFFFF;
   --input-background: #181818;
   --input-text-color: #FFFFFF;
@@ -91,22 +92,4 @@ img {
   .container {
     padding: 1em;
   }
-}
-
-/* Add these new styles for category buttons */
-.category-item {
-  background-color: var(--input-background);
-  color: var(--input-text-color);
-  border: 1px solid var(--border-color);
-  transition: background-color 0.3s, color 0.3s;
-}
-
-.category-item.selected {
-  background-color: var(--primary-color);
-  color: var(--button-text-color);
-}
-
-.category-item:hover {
-  background-color: var(--button-background);
-  color: var(--button-text-color);
 }

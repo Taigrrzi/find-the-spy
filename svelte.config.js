@@ -8,6 +8,7 @@ const config = {
     preprocess: vitePreprocess(),
 
     kit: {
+        appDir: 'app',
         adapter: adapter(),
         paths: {
             base: process.env.NODE_ENV === 'production' ? '/find-the-spy' : '',
